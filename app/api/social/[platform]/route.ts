@@ -7,9 +7,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ platform: string }> }) {
   const { platform } = await params;
-  const db = getDb();
-  syncFromZernioConfig(db);
-  const detail = platformDetail(db, platform as SocialPlatform);
+  const db = await getDb();
+  await syncFromZernioConfig(db);
+  const detail = await platformDetail(db, platform as SocialPlatform);
   if (!detail) {
     return NextResponse.json({ error: `unknown platform: ${platform}` }, { status: 404 });
   }

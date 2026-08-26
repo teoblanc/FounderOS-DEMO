@@ -8,8 +8,8 @@ import {
   net,
   SAMPLE_EXPENSES,
 } from '@/lib/finances';
-import { openLedger } from '@/lib/ledger';
-import { openBankStore } from '@/lib/bank';
+import { getLedger } from '@/lib/ledger';
+import { getBankStore } from '@/lib/bank';
 import { businessSeries } from '@/lib/bank-statements';
 import { PageHeader } from '@/components/PageHeader';
 import { SharePie } from '@/components/SharePie';
@@ -74,9 +74,9 @@ export default async function FinancesPage() {
   let ledgerSpend: { category: string; total: number }[] = [];
   let ledgerMonth: string | null = null;
   try {
-    const ledger = openLedger();
-    ledgerSpend = ledger.monthly();
-    ledgerMonth = ledger.latestMonth();
+    const ledger = await getLedger();
+    ledgerSpend = await ledger.monthly();
+    ledgerMonth = await ledger.latestMonth();
     ledger.close();
   } catch {
     ledgerSpend = [];
@@ -85,8 +85,8 @@ export default async function FinancesPage() {
   // Per-business income from uploaded bank statements (Vantage, General Ops…).
   let bankSeries: ReturnType<typeof businessSeries> = [];
   try {
-    const bank = openBankStore();
-    bankSeries = businessSeries(bank.all());
+    const bank = await getBankStore();
+    bankSeries = businessSeries(await bank.all());
     bank.close();
   } catch {
     bankSeries = [];

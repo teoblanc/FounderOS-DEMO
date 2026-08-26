@@ -4,6 +4,7 @@ import { buildBrainGraph } from '@/lib/brain-graph';
 import { buildKnowledgeGraph } from '@/lib/knowledge-graph';
 import { demoMemoryGraph, distillMemoryGraph, type MemoryGraph } from '@/lib/memory-core';
 import { getDb } from '@/lib/data';
+import type { FounderDb } from '@/lib/db';
 import { PageHeader } from '@/components/PageHeader';
 import { BrainDump } from '@/components/BrainDump';
 import { BrainGraphView } from '@/components/BrainGraphView';
@@ -19,8 +20,8 @@ export const dynamic = 'force-dynamic';
 
 // The client roster is the seeded funnel. Wire a CRM in here and the graph's
 // client ring becomes live without touching the graph itself.
-function clientRoster(db: ReturnType<typeof getDb>): RosterClient[] {
-  return db.funnel.journeys().map((j) => ({
+async function clientRoster(db: FounderDb): Promise<RosterClient[]> {
+  return (await db.funnel.journeys()).map((j) => ({
     id: j.id,
     name: j.name,
     venture: j.venture,
@@ -52,22 +53,22 @@ function memoryConstellation(): MemoryGraph {
   return value;
 }
 
-export default function BrainPage() {
-  const db = getDb();
+export default async function BrainPage() {
+  const db = await getDb();
   // latest run per agent (oldest first so the LAST write per id is the newest)
   const runsByAgent = Object.fromEntries(
-    db.agentRuns
-      .recent(300)
+    (await db.agentRuns.recent(300))
       .reverse()
       .map((r) => [r.agentId, r]),
   );
 
-  const knowledgeGraph = buildKnowledgeGraph(
-    db.agents.all(),
-    db.departments.all(),
-    db.people.all(),
-    db.sopTasks.all(),
-  );
+  const agents = await db.agents.all();
+  const departments = await db.departments.all();
+  const people = await db.people.all();
+  const sopTasks = await db.sopTasks.all();
+
+  const knowledgeGraph = buildKnowledgeGraph(agents, departments, people, sopTasks);
+  const clients = await clientRoster(db);
 
   return (
     <div className="flex h-[calc(100dvh-9.25rem)] min-h-[520px] flex-col">
@@ -88,12 +89,12 @@ export default function BrainPage() {
         <BrainGraphView
           fill
           graph={knowledgeGraph}
-          agents={db.agents.all()}
-          departments={db.departments.all()}
-          people={db.people.all()}
-          tasks={db.sopTasks.all()}
+          agents={agents}
+          departments={departments}
+          people={people}
+          tasks={sopTasks}
           memory={memoryConstellation()}
-          clients={clientRoster(db)}
+          clients={clients}
           runsByAgent={runsByAgent}
         />
       </div>

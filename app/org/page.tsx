@@ -83,9 +83,9 @@ function SystemCard({ href, title, caption }: { href: string; title: string; cap
 }
 
 export default async function OrgChartPage({ searchParams }: { searchParams?: Promise<{ venture?: string }> }) {
-  const db = getDb();
-  const departments = db.departments.all();
-  const agents = db.agents.all();
+  const db = await getDb();
+  const departments = await db.departments.all();
+  const agents = await db.agents.all();
   // The venture lens: same roster, same DB — the switcher just changes which
   // crew lights up. No venture param = everything bright.
   const sp = await searchParams;
@@ -99,7 +99,7 @@ export default async function OrgChartPage({ searchParams }: { searchParams?: Pr
     agents.filter((a) => a.id !== 'conductor'),
   );
   const agentNames = Object.fromEntries(agents.map((a) => [a.id, a.name]));
-  const lastBroadcast = db.broadcasts.recent(1)[0] ?? null;
+  const lastBroadcast = (await db.broadcasts.recent(1))[0] ?? null;
 
   return (
     <div>

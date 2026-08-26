@@ -13,8 +13,9 @@ export const dynamic = 'force-dynamic';
  * database with the real link on every row so you can open or copy one
  * straight to whoever asked for it.
  */
-export default function LeadMagnetsPage() {
-  const rows = getDb().leadMagnets.all();
+export default async function LeadMagnetsPage() {
+  const db = await getDb();
+  const rows = await db.leadMagnets.all();
   const live = rows.filter((r) => r.status === 'live').length;
   return (
     <div>

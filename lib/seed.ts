@@ -1624,41 +1624,45 @@ const skills: Omit<Skill, 'markdown'>[] = [
   { id: 'skill-attribution', name: 'Revenue attribution', category: 'Ops', description: 'Ties content and calls to closed revenue via Trakyo.', ownerAgentId: null, status: 'planned', tools: ['trakyo', 'ghl'], order: 11 },
 ];
 
-export function seedDatabase(db: FounderDb): void {
-  // INSERT OR REPLACE in every repo makes re-seeding idempotent by id.
-  for (const d of departments) db.departments.insert(d);
-  for (const a of agents) db.agents.insert(a);
+export async function seedDatabase(db: FounderDb): Promise<void> {
+  // INSERT OR REPLACE in every repo makes re-seeding idempotent by id. Rows
+  // within one table are independent of each other, so each batch runs
+  // concurrently — a real win under D1, where every call is a network
+  // round trip; batches themselves stay sequential so a delete never races
+  // ahead of the inserts that make its "current ids" list correct.
+  await Promise.all(departments.map((d) => db.departments.insert(d)));
+  await Promise.all(agents.map((a) => db.agents.insert(a)));
   // The roster IS the runtime: rows that left the roster leave the DB too,
   // and departments that left the operating model go with them.
-  db.agents.deleteWhereIdNotIn(agents.map((a) => a.id));
-  db.departments.deleteWhereIdNotIn(departments.map((d) => d.id));
-  for (const p of people) db.people.insert(p);
-  db.people.deleteWhereIdNotIn(people.map((p) => p.id));
-  for (const m of leadMagnets) db.leadMagnets.insert(m);
-  db.leadMagnets.deleteWhereIdNotIn(leadMagnets.map((m) => m.id));
-  for (const t of sopTasks) db.sopTasks.insert(t);
-  db.sopTasks.deleteWhereIdNotIn(sopTasks.map((t) => t.id));
-  for (const w of workflows) db.workflows.insert(w);
-  db.workflows.deleteWhereIdNotIn(workflows.map((w) => w.id));
-  for (const s of skills) db.skills.insert({ ...s, markdown: skillDoc(s) });
-  db.skills.deleteWhereIdNotIn(skills.map((s) => s.id));
-  for (const t of agentTasks) db.agentTasks.insert(t); // insert-by-id; user tasks coexist
-  for (const t of tools) db.tools.insert(t);
-  for (const r of roadmap) db.roadmap.insert(r);
-  for (const m of metrics) db.metrics.insert(m);
-  for (const d of domains) db.domains.insert(d);
-  for (const p of PERSONAS) db.personas.insert(p);
-  for (const p of phases) db.phases.insert(p);
-  for (const a of socialAccounts) db.social.upsertAccount(a);
-  for (const s of socialBaseline) db.social.insertSnapshot(s);
-  for (const d of socialDms) db.social.upsertDm(d);
-  for (const s of socialDmSnapshots) db.social.insertDmSnapshot(s);
-  for (const m of socialDmMessages) db.social.upsertDmMessage(m);
+  await db.agents.deleteWhereIdNotIn(agents.map((a) => a.id));
+  await db.departments.deleteWhereIdNotIn(departments.map((d) => d.id));
+  await Promise.all(people.map((p) => db.people.insert(p)));
+  await db.people.deleteWhereIdNotIn(people.map((p) => p.id));
+  await Promise.all(leadMagnets.map((m) => db.leadMagnets.insert(m)));
+  await db.leadMagnets.deleteWhereIdNotIn(leadMagnets.map((m) => m.id));
+  await Promise.all(sopTasks.map((t) => db.sopTasks.insert(t)));
+  await db.sopTasks.deleteWhereIdNotIn(sopTasks.map((t) => t.id));
+  await Promise.all(workflows.map((w) => db.workflows.insert(w)));
+  await db.workflows.deleteWhereIdNotIn(workflows.map((w) => w.id));
+  await Promise.all(skills.map((s) => db.skills.insert({ ...s, markdown: skillDoc(s) })));
+  await db.skills.deleteWhereIdNotIn(skills.map((s) => s.id));
+  await Promise.all(agentTasks.map((t) => db.agentTasks.insert(t))); // insert-by-id; user tasks coexist
+  await Promise.all(tools.map((t) => db.tools.insert(t)));
+  await Promise.all(roadmap.map((r) => db.roadmap.insert(r)));
+  await Promise.all(metrics.map((m) => db.metrics.insert(m)));
+  await Promise.all(domains.map((d) => db.domains.insert(d)));
+  await Promise.all(PERSONAS.map((p) => db.personas.insert(p)));
+  await Promise.all(phases.map((p) => db.phases.insert(p)));
+  await Promise.all(socialAccounts.map((a) => db.social.upsertAccount(a)));
+  await Promise.all(socialBaseline.map((s) => db.social.insertSnapshot(s)));
+  await Promise.all(socialDms.map((d) => db.social.upsertDm(d)));
+  await Promise.all(socialDmSnapshots.map((s) => db.social.insertDmSnapshot(s)));
+  await Promise.all(socialDmMessages.map((m) => db.social.upsertDmMessage(m)));
   // Retired dummy email history leaves the DB on re-seed; the real Beehiiv
   // baseline is authoritative. Live-synced snapshots survive.
-  db.emailList.deleteSeeded();
-  for (const s of emailListBaseline) db.emailList.insertSnapshot(s);
-  for (const p of socialPosts) db.socialPosts.enqueue(p);
-  for (const c of funnelContacts) db.funnel.insertContact(c);
-  for (const t of funnelTouches) db.funnel.insertTouch(t);
+  await db.emailList.deleteSeeded();
+  await Promise.all(emailListBaseline.map((s) => db.emailList.insertSnapshot(s)));
+  await Promise.all(socialPosts.map((p) => db.socialPosts.enqueue(p)));
+  await Promise.all(funnelContacts.map((c) => db.funnel.insertContact(c)));
+  await Promise.all(funnelTouches.map((t) => db.funnel.insertTouch(t)));
 }

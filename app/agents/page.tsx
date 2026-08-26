@@ -106,17 +106,31 @@ function AgentRosterCard({
   );
 }
 
-export default function AgentsPage() {
-  const db = getDb();
-  const departments = db.departments.all();
-  const agents = db.agents.all();
+export default async function AgentsPage() {
+  const db = await getDb();
+  const departments = await db.departments.all();
+  const agents = await db.agents.all();
   const agentsById = new Map(agents.map((a) => [a.id, a]));
   const agentNames = Object.fromEntries(agents.map((a) => [a.id, a.name]));
-  const activity = recentActivity(db, 40);
-  const totalRuns = db.agentRuns.recent(1000).length;
-  const allTasks = db.agentTasks.all();
-  const allCrons = db.agentCrons.all();
+  const activity = await recentActivity(db, 40);
+  const totalRuns = (await db.agentRuns.recent(1000)).length;
+  const allTasks = await db.agentTasks.all();
+  const allCrons = await db.agentCrons.all();
   const openTasks = allTasks.filter((t) => t.status !== 'done').length;
+
+  // Per-agent last run + full message history, fetched once up front (was an
+  // N+1 read per roster card now that these repo calls are async).
+  const agentExtras = await Promise.all(
+    agents.map(async (agent) => {
+      const [runs, messages] = await Promise.all([
+        db.agentRuns.byAgent(agent.id),
+        db.agentMessages.byAgent(agent.id),
+      ]);
+      return { agentId: agent.id, lastRun: runs[0], messages };
+    }),
+  );
+  const lastRunByAgentId = new Map(agentExtras.map((e) => [e.agentId, e.lastRun]));
+  const messagesByAgentId = new Map(agentExtras.map((e) => [e.agentId, e.messages]));
 
   return (
     <div>
@@ -162,10 +176,10 @@ export default function AgentsPage() {
                     key={agent.id}
                     agent={agent}
                     parent={agent.parentId ? agentsById.get(agent.parentId) ?? null : null}
-                    lastRun={db.agentRuns.byAgent(agent.id)[0]}
+                    lastRun={lastRunByAgentId.get(agent.id)}
                     tasks={allTasks.filter((t) => t.agentId === agent.id)}
                     crons={allCrons.filter((c) => c.agentId === agent.id)}
-                    messages={db.agentMessages.byAgent(agent.id)}
+                    messages={messagesByAgentId.get(agent.id) ?? []}
                   />
                 ))}
               </div>

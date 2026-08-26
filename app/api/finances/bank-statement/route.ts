@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { execFile } from 'node:child_process';
 import { parseBankStatementSummary } from '@/lib/bank-statements';
-import { openBankStore } from '@/lib/bank';
+import { getBankStore } from '@/lib/bank';
+import { isWorkersRuntime } from '@/lib/runtime';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,6 +33,16 @@ function pdfToText(buf: Buffer): Promise<string> {
 /** Accept a bank-statement PDF, extract its summary (income/outflow per business
     per month), and upsert it into the bank store. Idempotent by account+month. */
 export async function POST(req: Request) {
+  // Extracting text from a PDF needs the local `pdftotext` binary — Workers
+  // can never spawn a process, on this deployment or any other. Honest 501
+  // rather than a confusing 500 from execFile failing to find the binary.
+  if (await isWorkersRuntime()) {
+    return NextResponse.json(
+      { error: 'PDF bank-statement upload is not available on this deployment (requires a local pdftotext binary)' },
+      { status: 501 },
+    );
+  }
+
   const ctype = req.headers.get('content-type') ?? '';
   let buf: Buffer | null = null;
   try {
@@ -62,9 +73,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'not a recognizable bank statement summary' }, { status: 400 });
   }
 
-  const store = openBankStore();
+  const store = await getBankStore();
   try {
-    store.upsert(summary);
+    await store.upsert(summary);
   } finally {
     store.close();
   }

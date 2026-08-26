@@ -20,7 +20,7 @@ describe('chatWithAgent (stub provider)', () => {
     const db = openDb(':memory:');
     const res = await chatWithAgent(db, realAgents, 'data-agent', 'what is our revenue split?');
     expect(res.reply).toContain('what is our revenue split?'); // stub echoes
-    const rows = db.agentMessages.byAgent('data-agent');
+    const rows = await db.agentMessages.byAgent('data-agent');
     expect(rows.map((m) => m.role)).toEqual(['user', 'assistant']);
     expect(rows[0].content).toBe('what is our revenue split?');
     expect(rows[1].content).toBe(res.reply);

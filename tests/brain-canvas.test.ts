@@ -117,8 +117,8 @@ describe('the knowledge graph is a blank canvas', () => {
     const { openDb } = await import('@/lib/db');
     const { seedDatabase } = await import('@/lib/seed');
     const db = openDb(':memory:');
-    seedDatabase(db);
-    const g = buildKnowledgeGraph(db.agents.all(), db.departments.all(), db.people.all(), db.sopTasks.all());
+    await seedDatabase(db);
+    const g = buildKnowledgeGraph(await db.agents.all(), await db.departments.all(), await db.people.all(), await db.sopTasks.all());
     db.close();
 
     const identifying =

@@ -5,8 +5,9 @@ import { Badge } from '@/components/terminal';
 
 export const dynamic = 'force-dynamic';
 
-export default function PersonasPage() {
-  const personas = getDb().personas.all();
+export default async function PersonasPage() {
+  const db = await getDb();
+  const personas = await db.personas.all();
 
   return (
     <div>

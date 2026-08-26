@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const runtime = createRuntime(getDb(), realAgents);
+  const runtime = createRuntime(await getDb(), realAgents);
   try {
     const run = await runtime.run(id);
     return NextResponse.json({ run });

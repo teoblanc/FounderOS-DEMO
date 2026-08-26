@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 
 /** The post queue, newest first. */
 export async function GET() {
-  return NextResponse.json({ posts: getDb().socialPosts.all() });
+  const db = await getDb();
+  return NextResponse.json({ posts: await db.socialPosts.all() });
 }
 
 const CreateSchema = z.object({
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     scheduledFor: parsed.data.scheduledFor ?? null,
     createdAt: new Date().toISOString(),
   };
-  getDb().socialPosts.enqueue(post);
+  const db = await getDb();
+  await db.socialPosts.enqueue(post);
   return NextResponse.json({ post }, { status: 201 });
 }
