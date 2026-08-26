@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseStatementCsv, categorize, type LedgerRow } from '@/lib/statements';
-import { openLedger } from '@/lib/ledger';
+import { getLedger } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,10 +35,10 @@ export async function POST(req: Request) {
   }
 
   const rows: LedgerRow[] = parsed.map((r) => ({ ...r, category: categorize(r) }));
-  const ledger = openLedger();
+  const ledger = await getLedger();
   try {
-    const inserted = ledger.insertRows(rows);
-    return NextResponse.json({ inserted, parsed: parsed.length, byCategory: ledger.monthly() });
+    const inserted = await ledger.insertRows(rows);
+    return NextResponse.json({ inserted, parsed: parsed.length, byCategory: await ledger.monthly() });
   } finally {
     ledger.close();
   }

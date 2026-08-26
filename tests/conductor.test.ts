@@ -27,7 +27,7 @@ describe('routeConductorMessage (stub)', () => {
     const res = await routeConductorMessage(db, realAgents, '@sales-agent what is pipeline?');
     expect(res.routedTo).toBe('sales-agent');
     expect(res.reply.length).toBeGreaterThan(0);
-    expect(db.agentMessages.byAgent('sales-agent')[0].content).toBe('what is pipeline?');
+    expect((await db.agentMessages.byAgent('sales-agent'))[0].content).toBe('what is pipeline?');
   });
 
   test('@Name matches by humanized name slug too', async () => {
@@ -64,7 +64,7 @@ describe('POST /api/agents/conductor/chat', () => {
         method: 'POST',
         body: JSON.stringify({ message: '@sales-agent how are deals?' }),
       }),
-      { params: { id: 'conductor' } },
+      { params: Promise.resolve({ id: 'conductor' }) },
     );
     expect(res.status).toBe(200);
     const body = await res.json();

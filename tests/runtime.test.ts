@@ -41,7 +41,7 @@ describe('agent runtime', () => {
     const run = await runtime.run('test-ok');
     expect(run.ok).toBe(true);
     expect(run.summary).toBe('did the thing');
-    const stored = db.agentRuns.byAgent('test-ok');
+    const stored = await db.agentRuns.byAgent('test-ok');
     expect(stored).toHaveLength(1);
     expect(stored[0].ok).toBe(true);
     expect(stored[0].finishedAt >= stored[0].startedAt).toBe(true);
@@ -53,7 +53,7 @@ describe('agent runtime', () => {
     const run = await runtime.run('test-fail');
     expect(run.ok).toBe(false);
     expect(run.summary).toContain('connector exploded');
-    expect(db.agentRuns.byAgent('test-fail')).toHaveLength(1);
+    expect(await db.agentRuns.byAgent('test-fail')).toHaveLength(1);
   });
 
   test('throws on an unknown agent id', async () => {
@@ -67,7 +67,7 @@ describe('agent runtime', () => {
     const runtime = createRuntime(db, [okAgent, failAgent]);
     await runtime.run('test-ok');
     await runtime.run('test-fail');
-    const recent = db.agentRuns.recent(10);
+    const recent = await db.agentRuns.recent(10);
     expect(recent).toHaveLength(2);
     expect(recent[0].agentId).toBe('test-fail');
   });

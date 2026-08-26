@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe('agents table migration', () => {
-  test('openDb upgrades a pre-hierarchy agents table in place', () => {
+  test('openDb upgrades a pre-hierarchy agents table in place', async () => {
     const file = path.join(mkdtempSync(path.join(tmpdir(), 'alex-migrate-')), 'old.db');
     const raw = new Database(file);
     raw.exec(`
@@ -33,7 +33,7 @@ describe('agents table migration', () => {
     raw.close();
 
     db = openDb(file);
-    const agents = db.agents.all();
+    const agents = await db.agents.all();
     expect(agents).toHaveLength(1);
     expect(agents[0].parentId).toBeNull();
     expect(agents[0].instance).toBe('builtin');
@@ -41,43 +41,43 @@ describe('agents table migration', () => {
 });
 
 describe('agents repo: hierarchy fields', () => {
-  test('round-trips parentId, instance, and the worker tier', () => {
+  test('round-trips parentId, instance, and the worker tier', async () => {
     db = openDb(':memory:');
-    db.departments.insert({ id: 'dept-x', name: 'X', slug: 'x', tagline: '', color: '#fff', order: 1 });
-    db.agents.insert({
+    await db.departments.insert({ id: 'dept-x', name: 'X', slug: 'x', tagline: '', color: '#fff', order: 1 });
+    await db.agents.insert({
       id: 'parent-1', departmentId: 'dept-x', name: 'Parent', role: 'r', status: 'active',
       tier: 'lead', description: '', model: 'm', tools: [], parentId: null, instance: 'claude-code',
     });
-    db.agents.insert({
+    await db.agents.insert({
       id: 'child-1', departmentId: 'dept-x', name: 'Child', role: 'r', status: 'active',
       tier: 'worker', description: '', model: 'm', tools: [], parentId: 'parent-1', instance: 'builtin',
     });
-    const byId = new Map(db.agents.all().map((a) => [a.id, a]));
+    const byId = new Map((await db.agents.all()).map((a) => [a.id, a]));
     expect(byId.get('child-1')?.parentId).toBe('parent-1');
     expect(byId.get('child-1')?.tier).toBe('worker');
     expect(byId.get('parent-1')?.instance).toBe('claude-code');
   });
 
-  test('deleteWhereIdNotIn removes stale agents', () => {
+  test('deleteWhereIdNotIn removes stale agents', async () => {
     db = openDb(':memory:');
-    db.departments.insert({ id: 'dept-x', name: 'X', slug: 'x', tagline: '', color: '#fff', order: 1 });
+    await db.departments.insert({ id: 'dept-x', name: 'X', slug: 'x', tagline: '', color: '#fff', order: 1 });
     for (const id of ['keep-1', 'stale-1']) {
-      db.agents.insert({
+      await db.agents.insert({
         id, departmentId: 'dept-x', name: id, role: 'r', status: 'active',
         tier: 'lead', description: '', model: 'm', tools: [], parentId: null, instance: 'builtin',
       });
     }
-    db.agents.deleteWhereIdNotIn(['keep-1']);
-    expect(db.agents.all().map((a) => a.id)).toEqual(['keep-1']);
+    await db.agents.deleteWhereIdNotIn(['keep-1']);
+    expect((await db.agents.all()).map((a) => a.id)).toEqual(['keep-1']);
   });
 
-  test('departments.deleteWhereIdNotIn removes stale departments', () => {
+  test('departments.deleteWhereIdNotIn removes stale departments', async () => {
     db = openDb(':memory:');
     for (const [id, order] of [['dept-keep', 1], ['dept-stale', 2]] as const) {
-      db.departments.insert({ id, name: id, slug: id, tagline: '', color: '#fff', order });
+      await db.departments.insert({ id, name: id, slug: id, tagline: '', color: '#fff', order });
     }
-    db.departments.deleteWhereIdNotIn(['dept-keep']);
-    expect(db.departments.all().map((d) => d.id)).toEqual(['dept-keep']);
+    await db.departments.deleteWhereIdNotIn(['dept-keep']);
+    expect((await db.departments.all()).map((d) => d.id)).toEqual(['dept-keep']);
   });
 });
 
@@ -123,7 +123,7 @@ describe('broadcasts', () => {
     const runtime = createRuntime(db, [echo('a1', 'r')]);
     await runtime.broadcast('first');
     await runtime.broadcast('second');
-    const recent = db.broadcasts.recent(5);
+    const recent = await db.broadcasts.recent(5);
     expect(recent).toHaveLength(2);
     expect(recent[0].message).toBe('second');
     expect(recent[0].replies).toHaveLength(1);

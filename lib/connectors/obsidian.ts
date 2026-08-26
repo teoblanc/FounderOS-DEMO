@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { ConnectorStatus } from '@/lib/connectors/types';
+import { isWorkersRuntime } from '@/lib/runtime';
 
 const VAULT = process.env.OBSIDIAN_VAULT ?? path.join(os.homedir(), 'Documents', 'Notes Vault');
 const WALK_CAP = 5000;
@@ -67,6 +68,15 @@ export function readVaultNotes(vaultPath: string = VAULT): { path: string; conte
 }
 
 export async function obsidianStatus(): Promise<ConnectorStatus> {
+  if (await isWorkersRuntime()) {
+    return {
+      id: 'obsidian',
+      name: 'Notes Vault',
+      kind: 'knowledge',
+      state: 'not_configured',
+      detail: 'not available on this deployment — the notes vault is a local filesystem path',
+    };
+  }
   if (!fs.existsSync(VAULT)) {
     return {
       id: 'obsidian',

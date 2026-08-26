@@ -8,20 +8,20 @@ afterEach(() => {
 });
 
 describe('openDb', () => {
-  test('creates an empty database with all tables queryable', () => {
+  test('creates an empty database with all tables queryable', async () => {
     db = openDb(':memory:');
-    expect(db.departments.all()).toEqual([]);
-    expect(db.agents.all()).toEqual([]);
-    expect(db.tools.all()).toEqual([]);
-    expect(db.roadmap.all()).toEqual([]);
-    expect(db.metrics.all()).toEqual([]);
-    expect(db.domains.all()).toEqual([]);
-    expect(db.phases.all()).toEqual([]);
+    expect(await db.departments.all()).toEqual([]);
+    expect(await db.agents.all()).toEqual([]);
+    expect(await db.tools.all()).toEqual([]);
+    expect(await db.roadmap.all()).toEqual([]);
+    expect(await db.metrics.all()).toEqual([]);
+    expect(await db.domains.all()).toEqual([]);
+    expect(await db.phases.all()).toEqual([]);
   });
 
-  test('round-trips an agent including its tools array', () => {
+  test('round-trips an agent including its tools array', async () => {
     db = openDb(':memory:');
-    db.departments.insert({
+    await db.departments.insert({
       id: 'dept-tech',
       name: 'Tech & Automations',
       slug: 'tech',
@@ -42,13 +42,13 @@ describe('openDb', () => {
       parentId: null,
       instance: 'builtin',
     };
-    db.agents.insert(agent);
-    expect(db.agents.all()).toEqual([agent]);
+    await db.agents.insert(agent);
+    expect(await db.agents.all()).toEqual([agent]);
   });
 
-  test('lists agents scoped to a department', () => {
+  test('lists agents scoped to a department', async () => {
     db = openDb(':memory:');
-    db.departments.insert({
+    await db.departments.insert({
       id: 'dept-a',
       name: 'A',
       slug: 'a',
@@ -56,7 +56,7 @@ describe('openDb', () => {
       color: '#fff',
       order: 1,
     });
-    db.departments.insert({
+    await db.departments.insert({
       id: 'dept-b',
       name: 'B',
       slug: 'b',
@@ -74,14 +74,14 @@ describe('openDb', () => {
       parentId: null,
       instance: 'builtin',
     };
-    db.agents.insert({ ...base, id: 'a1', departmentId: 'dept-a', name: 'A1' });
-    db.agents.insert({ ...base, id: 'b1', departmentId: 'dept-b', name: 'B1' });
-    expect(db.agents.byDepartment('dept-a').map((a) => a.id)).toEqual(['a1']);
+    await db.agents.insert({ ...base, id: 'a1', departmentId: 'dept-a', name: 'A1' });
+    await db.agents.insert({ ...base, id: 'b1', departmentId: 'dept-b', name: 'B1' });
+    expect((await db.agents.byDepartment('dept-a')).map((a) => a.id)).toEqual(['a1']);
   });
 
-  test('returns departments ordered by their order column', () => {
+  test('returns departments ordered by their order column', async () => {
     db = openDb(':memory:');
-    db.departments.insert({
+    await db.departments.insert({
       id: 'second',
       name: 'Second',
       slug: 's2',
@@ -89,7 +89,7 @@ describe('openDb', () => {
       color: '#fff',
       order: 2,
     });
-    db.departments.insert({
+    await db.departments.insert({
       id: 'first',
       name: 'First',
       slug: 's1',
@@ -97,10 +97,10 @@ describe('openDb', () => {
       color: '#fff',
       order: 1,
     });
-    expect(db.departments.all().map((d) => d.id)).toEqual(['first', 'second']);
+    expect((await db.departments.all()).map((d) => d.id)).toEqual(['first', 'second']);
   });
 
-  test('round-trips a business reference model domain with items array', () => {
+  test('round-trips a business reference model domain with items array', async () => {
     db = openDb(':memory:');
     const domain = {
       id: 'brm-9',
@@ -109,7 +109,7 @@ describe('openDb', () => {
       color: '#fbbf24',
       items: ['Contracts', 'Compliance'],
     };
-    db.domains.insert(domain);
-    expect(db.domains.all()).toEqual([domain]);
+    await db.domains.insert(domain);
+    expect(await db.domains.all()).toEqual([domain]);
   });
 });

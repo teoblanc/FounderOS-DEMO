@@ -17,22 +17,26 @@ const root =
   process.env.GBRAIN_STORE ??
   path.join(os.homedir(), 'knowledge', 'brain-store');
 
-const dbPath = process.env.FOUNDER_OS_DB ?? path.join(process.cwd(), 'data', 'founder-os.db');
-const db = openDb(dbPath);
-seedDatabase(db);
+async function main() {
+  const dbPath = process.env.FOUNDER_OS_DB ?? path.join(process.cwd(), 'data', 'founder-os.db');
+  const db = openDb(dbPath);
+  await seedDatabase(db);
 
-const docs = buildBrainDocs({
-  departments: db.departments.all(),
-  agents: db.agents.all(),
-  people: db.people.all(),
-  tasks: db.sopTasks.all(),
-  tools: db.tools.all(),
-});
+  const docs = buildBrainDocs({
+    departments: await db.departments.all(),
+    agents: await db.agents.all(),
+    people: await db.people.all(),
+    tasks: await db.sopTasks.all(),
+    tools: await db.tools.all(),
+  });
 
-const { written, skipped } = writeBrainDocs(docs, root);
-db.close();
+  const { written, skipped } = writeBrainDocs(docs, root);
+  db.close();
 
-console.log(`brain-docs → ${root}`);
-console.log(`  written: ${written}`);
-console.log(`  skipped (hand-edited): ${skipped}`);
-console.log(`  total docs: ${docs.length}`);
+  console.log(`brain-docs → ${root}`);
+  console.log(`  written: ${written}`);
+  console.log(`  skipped (hand-edited): ${skipped}`);
+  console.log(`  total docs: ${docs.length}`);
+}
+
+main();

@@ -1,21 +1,24 @@
-import { describe, expect, test } from 'vitest';
+import { beforeAll, describe, expect, test } from 'vitest';
 import { openDb, type FounderDb } from '@/lib/db';
 import { seedDatabase } from '@/lib/seed';
 import { buildKnowledgeGraph } from '@/lib/knowledge-graph';
 import { ACTION_LENSES, ALL_LENSES, ENTITY_LENSES, FUNCTION_LENSES, lensNodeSet, type LensContext } from '@/lib/graph-lens';
 
-function contextFromSeed(): LensContext {
+async function contextFromSeed(): Promise<LensContext> {
   const db: FounderDb = openDb(':memory:');
-  seedDatabase(db);
-  const graph = buildKnowledgeGraph(db.agents.all(), db.departments.all(), db.people.all(), db.sopTasks.all());
+  await seedDatabase(db);
+  const graph = buildKnowledgeGraph(await db.agents.all(), await db.departments.all(), await db.people.all(), await db.sopTasks.all());
   // dept resolver mirroring the component's teamForFocus: worker → its dept
   const deptOf = new Map<string, string>();
-  for (const a of db.agents.all()) deptOf.set(`emp:${a.id}`, `team:${a.departmentId}`);
-  for (const p of db.people.all()) deptOf.set(`person:${p.id}`, `team:${p.departmentId}`);
+  for (const a of await db.agents.all()) deptOf.set(`emp:${a.id}`, `team:${a.departmentId}`);
+  for (const p of await db.people.all()) deptOf.set(`person:${p.id}`, `team:${p.departmentId}`);
   return { nodes: graph.nodes, teamOf: (id) => deptOf.get(id) ?? null };
 }
 
-const ctx = contextFromSeed();
+let ctx: LensContext;
+beforeAll(async () => {
+  ctx = await contextFromSeed();
+});
 
 describe('graph lenses — Alex taxonomy (2026-07-12)', () => {
   test('the requested categories all exist', () => {

@@ -13,37 +13,37 @@ const ROWS: LedgerRow[] = [
 ];
 
 describe('ledger store', () => {
-  it('inserts rows and dedupes re-uploads by content hash', () => {
+  it('inserts rows and dedupes re-uploads by content hash', async () => {
     led = openLedger(':memory:');
-    expect(led.insertRows(ROWS)).toBe(4);
-    expect(led.insertRows(ROWS)).toBe(0); // same statement again → nothing new
-    expect(led.rowCount()).toBe(4);
+    expect(await led.insertRows(ROWS)).toBe(4);
+    expect(await led.insertRows(ROWS)).toBe(0); // same statement again → nothing new
+    expect(await led.rowCount()).toBe(4);
   });
 
-  it('monthly() groups out-rows by category in USD, descending; income excluded', () => {
+  it('monthly() groups out-rows by category in USD, descending; income excluded', async () => {
     led = openLedger(':memory:');
-    led.insertRows(ROWS);
-    expect(led.monthly()).toEqual([
+    await led.insertRows(ROWS);
+    expect(await led.monthly()).toEqual([
       { category: 'Advertising', total: 1500 },
       { category: 'Infrastructure', total: 100 },
     ]);
   });
 
-  it('reconcile(income) returns income, expenses (out total), and net', () => {
+  it('reconcile(income) returns income, expenses (out total), and net', async () => {
     led = openLedger(':memory:');
-    led.insertRows(ROWS);
-    expect(led.reconcile(5000)).toEqual({ income: 5000, expenses: 1600, net: 3400 });
+    await led.insertRows(ROWS);
+    expect(await led.reconcile(5000)).toEqual({ income: 5000, expenses: 1600, net: 3400 });
   });
 
-  it('monthly()/latestMonth() report only the most recent month when data spans several', () => {
+  it('monthly()/latestMonth() report only the most recent month when data spans several', async () => {
     led = openLedger(':memory:');
-    led.insertRows([
+    await led.insertRows([
       { date: '2026-05-10', description: 'May AWS', amountCents: 1000, direction: 'out', category: 'Infrastructure' },
       { date: '2026-06-10', description: 'Jun Ads', amountCents: 5000, direction: 'out', category: 'Advertising' },
       { date: '2026-06-12', description: 'Jun AWS', amountCents: 2000, direction: 'out', category: 'Infrastructure' },
     ]);
-    expect(led.latestMonth()).toBe('2026-06');
-    expect(led.monthly()).toEqual([
+    expect(await led.latestMonth()).toBe('2026-06');
+    expect(await led.monthly()).toEqual([
       { category: 'Advertising', total: 50 },
       { category: 'Infrastructure', total: 20 }, // May's 10 excluded
     ]);

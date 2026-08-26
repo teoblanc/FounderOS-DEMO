@@ -1,8 +1,10 @@
 # Runs on every pull request and every push to main.
 #
 # In plain terms: GitHub rents a clean machine, installs this project on it,
-# and runs the test suite, the type checker, and a production build. A red X
-# means something broke. It never deploys and it has no access to secrets.
+# and runs the test suite, the type checker, a production build, and a
+# Cloudflare Workers build (compile-only — never deployed, no Cloudflare
+# credentials involved). A red X means something broke. It never deploys and
+# it has no access to secrets.
 name: CI
 
 on:
@@ -37,5 +39,13 @@ jobs:
 
       - name: Production build
         run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      # Compiles the app into a Cloudflare Worker bundle so a PR that breaks
+      # the Workers deployment path fails here too. Build-only: no wrangler
+      # login, no real D1 database, nothing ever deployed.
+      - name: Cloudflare Workers build
+        run: npx opennextjs-cloudflare build
         env:
           NEXT_TELEMETRY_DISABLED: '1'

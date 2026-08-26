@@ -26,17 +26,19 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'payload missing a subscriber id' }, { status: 400 });
   }
 
-  getDb().social.upsertDmMessage(message);
+  const db = await getDb();
+  await db.social.upsertDmMessage(message);
   return NextResponse.json({ ok: true, id: message.id, subscriberId: message.subscriberId });
 }
 
 /** Lightweight health check: how many DMs are stored. */
 export async function GET(): Promise<Response> {
   const secret = process.env.MANYCHAT_WEBHOOK_SECRET;
+  const db = await getDb();
   return NextResponse.json({
     ok: true,
     endpoint: 'manychat-webhook',
     secured: Boolean(secret),
-    stored: getDb().social.dmMessages('instagram').length,
+    stored: (await db.social.dmMessages('instagram')).length,
   });
 }

@@ -5,10 +5,10 @@ import { hasBrandMark } from '@/lib/brand-logos';
 import { TOOL_BRANDS, toolBrand } from '@/lib/workflow-tool-brands';
 
 describe('workflow tool brands', () => {
-  test('every seeded workflow tool has an explicit entry that resolves to a real brand mark', () => {
+  test('every seeded workflow tool has an explicit entry that resolves to a real brand mark', async () => {
     const db = openDb(':memory:');
-    seedDatabase(db);
-    const tools = new Set(db.workflows.all().flatMap((w) => w.steps.flatMap((s) => s.tools)));
+    await seedDatabase(db);
+    const tools = new Set((await db.workflows.all()).flatMap((w) => w.steps.flatMap((s) => s.tools)));
     db.close();
     expect(tools.size).toBeGreaterThanOrEqual(10);
     for (const t of tools) {

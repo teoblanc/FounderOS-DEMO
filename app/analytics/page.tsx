@@ -150,21 +150,21 @@ function PieCard({
 }
 
 export default async function AnalyticsPage() {
-  const db = getDb();
-  syncFromZernioConfig(db);
+  const db = await getDb();
+  await syncFromZernioConfig(db);
   const today = new Date().toISOString().slice(0, 10);
 
   // Real agent-run activity — powers the agent-runs tile, the volume chart, and
   // the run-distribution pies.
-  const runs = db.agentRuns.recent(2000);
+  const runs = await db.agentRuns.recent(2000);
   const runVolume = agentRunVolume(runs, today, 14);
   const windowRuns = runVolume.reduce((s, p) => s + p.count, 0);
   const runs7d = runsWithin(runs, today, 7);
 
   // Real audience — Zernio snapshot totals + true 7d growth.
-  const dash = buildSocialDashboard(db);
+  const dash = await buildSocialDashboard(db);
   const totalFollowers = dash.totalFollowers;
-  const audience7d = audienceGrowthPct(db, 7);
+  const audience7d = await audienceGrowthPct(db, 7);
 
   // Live reads from the wired connectors (parallel; each degrades to pending).
   const [attio, wispr, stripe, emailUnread, subs] = await Promise.all([
@@ -219,7 +219,7 @@ export default async function AnalyticsPage() {
   const audienceReach = totalFollowers + (subs ?? 0);
 
   // Agent runs by agent — top handful, the long tail folded into "Other".
-  const agentName = new Map(db.agents.all().map((a) => [a.id, a.name]));
+  const agentName = new Map((await db.agents.all()).map((a) => [a.id, a.name]));
   const byAgent = new Map<string, number>();
   for (const r of runs) byAgent.set(r.agentId, (byAgent.get(r.agentId) ?? 0) + 1);
   const rankedAgents = [...byAgent.entries()].sort((a, b) => b[1] - a[1]);
