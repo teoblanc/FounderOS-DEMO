@@ -4,6 +4,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import type { ConnectorStatus } from '@/lib/connectors/types';
 import type { CommsItem } from '@/lib/comms';
+import { isWorkersRuntime } from '@/lib/runtime';
 
 // WhatsApp ships two separate macOS apps, each with its own group container:
 // the consumer app and WhatsApp Business (SMB). Alex switched to Business,
@@ -126,10 +127,14 @@ let statusCache: { at: number; status: ConnectorStatus } | null = null;
 const STATUS_TTL_MS = 60_000;
 
 export async function whatsappStatus(): Promise<ConnectorStatus> {
+  const base = { id: 'whatsapp', name: 'WhatsApp', kind: 'social' as const };
+  if (await isWorkersRuntime()) {
+    return { ...base, state: 'not_configured', detail: 'not available on this deployment — WhatsApp Desktop is a local macOS app' };
+  }
+
   const now = Date.now();
   if (statusCache && now - statusCache.at < STATUS_TTL_MS) return statusCache.status;
 
-  const base = { id: 'whatsapp', name: 'WhatsApp', kind: 'social' as const };
   const dbPath = resolveChatDb();
   let status: ConnectorStatus;
 
@@ -165,6 +170,7 @@ export async function whatsappStatus(): Promise<ConnectorStatus> {
 }
 
 export async function recentChats(limit = 15): Promise<CommsItem[]> {
+  if (await isWorkersRuntime()) return [];
   const dbPath = resolveChatDb();
   if (!dbPath) return [];
   const read = await boundedRead(dbPath, 'recent', limit);

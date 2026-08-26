@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import type { ConnectorStatus } from '@/lib/connectors/types';
+import { isWorkersRuntime } from '@/lib/runtime';
 
 const WISPR_DB = path.join(os.homedir(), 'Library', 'Application Support', 'Wispr Flow', 'flow.sqlite');
 
@@ -12,6 +13,15 @@ const WISPR_DB = path.join(os.homedir(), 'Library', 'Application Support', 'Wisp
  * Meetings.
  */
 export async function wisprStatus(): Promise<ConnectorStatus> {
+  if (await isWorkersRuntime()) {
+    return {
+      id: 'wispr',
+      name: 'Wispr Flow',
+      kind: 'local',
+      state: 'not_configured',
+      detail: 'not available on this deployment — Wispr Flow is a local desktop app',
+    };
+  }
   if (!fs.existsSync(WISPR_DB)) {
     return {
       id: 'wispr',

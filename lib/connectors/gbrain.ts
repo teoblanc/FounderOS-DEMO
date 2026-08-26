@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import type { BrainProvider, BrainSearchResult, BrainStatus } from '@/lib/brain';
+import { isWorkersRuntime } from '@/lib/runtime';
 
 export type ExecResult = { stdout: string; stderr: string; code: number };
 export type ExecFn = (cmd: string, args: string[], stdin?: string) => Promise<ExecResult>;
@@ -23,8 +24,13 @@ export function execTimeoutFor(args: string[]): number {
   return cmd === 'capture' || cmd === 'import' || cmd === 'embed' ? WRITE_TIMEOUT_MS : READ_TIMEOUT_MS;
 }
 
-const defaultExec: ExecFn = (cmd, args, stdin) =>
-  new Promise((resolve) => {
+const defaultExec: ExecFn = async (cmd, args, stdin) => {
+  // Workers can never spawn a process — short-circuit before execFile rather
+  // than find out how workerd's node:child_process shim behaves.
+  if (await isWorkersRuntime()) {
+    return { stdout: '', stderr: 'gbrain CLI is not available on this deployment', code: 1 };
+  }
+  return new Promise((resolve) => {
     const child = execFile(
       cmd,
       args,
@@ -48,6 +54,7 @@ const defaultExec: ExecFn = (cmd, args, stdin) =>
       child.stdin?.end();
     }
   });
+};
 
 function walkMarkdown(dir: string, files: string[] = []): string[] {
   let entries: fs.Dirent[];

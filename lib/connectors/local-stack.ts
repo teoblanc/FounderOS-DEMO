@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import type { ConnectorStatus } from '@/lib/connectors/types';
+import { isWorkersRuntime } from '@/lib/runtime';
 
 /**
  * One connector for the local machine stack: running services (ports) and
@@ -42,6 +43,15 @@ const HOME = os.homedir();
 const BREW = '/opt/homebrew/bin';
 
 export async function localStackStatus(): Promise<ConnectorStatus> {
+  if (await isWorkersRuntime()) {
+    return {
+      id: 'local-stack',
+      name: 'Local Stack',
+      kind: 'local',
+      state: 'error',
+      detail: 'not available on this deployment — local-stack checks require the operator’s own machine',
+    };
+  }
   const [commandCenter, remotionStudio, ollama, openclawGateway, tmuxCount] = await Promise.all([
     ping('http://localhost:4000'),
     ping('http://localhost:3789'),

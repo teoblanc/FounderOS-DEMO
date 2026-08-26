@@ -181,9 +181,10 @@ honest "not configured" mode. `.env.local` is gitignored.
 
 ## Tech stack
 
-- **Next.js 14** (App Router, server components) plus **TypeScript**
+- **Next.js 15** (App Router, server components) plus **TypeScript**
 - **Tailwind CSS**: monochrome "Monolith" theme with pickable colorways
-- **better-sqlite3**: seeded local store (WAL)
+- **better-sqlite3** (local/Railway) or **Cloudflare D1** (Workers): same
+  seeded schema, backend picked automatically at runtime
 - **Zod**: schema validation at every boundary
 - **Vitest**: test suite
 - **Vercel AI SDK**: agent LLM calls
@@ -212,6 +213,57 @@ so they never touch the seeded dev DB.
    in the Railway dashboard.
 4. Deploy. The knowledge services (G-Brain and Optimal Engine) run as companion
    services and are referenced by URL from the app's environment.
+
+---
+
+## Deploying to Cloudflare Workers
+
+An alternative to Railway for running the same seeded demo on Cloudflare's
+edge, via the [OpenNext Cloudflare adapter](https://opennextjs.dev/cloudflare).
+`better-sqlite3` is a native addon and can never run in a Workers isolate, so
+this path swaps it for [Cloudflare D1](https://developers.cloudflare.com/d1/)
+(D1 is SQLite, so the schema carries over almost unchanged) — `lib/db.ts`
+picks the right backend automatically depending on where it's running, so
+local dev, tests, and the Railway path above are completely unaffected.
+
+1. **Create the D1 database:**
+   ```bash
+   npx wrangler d1 create founder-os-demo
+   ```
+   Copy the `database_id` it prints into `wrangler.jsonc`'s `d1_databases[0]`
+   entry (replacing `REPLACE_WITH_YOUR_D1_DATABASE_ID`).
+2. **Apply the schema:**
+   ```bash
+   npx wrangler d1 migrations apply DB --remote
+   ```
+   (drop `--remote` to apply against the local Miniflare simulation first, for
+   the preview step below).
+3. **Preview locally** — builds the app and boots it under `workerd`
+   (Cloudflare's actual Workers runtime) against a local D1 simulation, so you
+   can click through the whole seeded app before touching your real account:
+   ```bash
+   npm run preview
+   ```
+4. **Deploy:**
+   ```bash
+   npm run deploy
+   ```
+5. **Secrets** — Workers don't read `.env.local`; set anything you want live
+   with `npx wrangler secret put KEY_NAME` instead (see `.env.example` for the
+   full list).
+
+**What's different on this deployment, and why that's expected:** a Workers
+isolate can never spawn a process or read a local filesystem — that's not a
+missing feature, it's fundamental to the sandbox. So a handful of connectors
+that are inherently tied to one physical machine report themselves honestly
+"not configured" here instead of attempting the call: the `gbrain` CLI,
+WhatsApp Desktop's local database, Wispr Flow, the Obsidian vault, the
+tmux/Homebrew local-stack checks, and PDF bank-statement upload (which shells
+out to `pdftotext`). Everything else — every page, every connector that talks
+to a real HTTP API, and CSV bank-statement upload — works the same as on
+Railway. This mirrors the app's own connector philosophy (`ConnectorStatus`
+never fakes "connected"), just applied to a platform constraint instead of a
+missing credential.
 
 ---
 
