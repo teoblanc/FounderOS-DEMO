@@ -284,16 +284,17 @@ function JourneyTableRows({
 export default async function FunnelPage({
   searchParams,
 }: {
-  searchParams?: { venture?: string; view?: string; stage?: string; layout?: string; lead?: string };
+  searchParams?: Promise<{ venture?: string; view?: string; stage?: string; layout?: string; lead?: string }>;
 }) {
-  const parsed = FunnelVentureSchema.safeParse(searchParams?.venture);
+  const sp = await searchParams;
+  const parsed = FunnelVentureSchema.safeParse(sp?.venture);
   const venture = parsed.success ? parsed.data : undefined;
-  const view = searchParams?.view === 'archive' ? 'archive' : 'live';
-  const stageParsed = FunnelStageSchema.safeParse(searchParams?.stage);
+  const view = sp?.view === 'archive' ? 'archive' : 'live';
+  const stageParsed = FunnelStageSchema.safeParse(sp?.stage);
   const stage = stageParsed.success ? stageParsed.data : undefined;
   // Two ways to see the same journeys: hubs left → right, or the circle
   // running outside → in (acquisition wedges around the rim, purchase center).
-  const layout = searchParams?.layout === 'radial' ? 'radial' : 'flow';
+  const layout = sp?.layout === 'radial' ? 'radial' : 'flow';
   const href = (
     v: FunnelVenture | undefined,
     w: 'live' | 'archive',
@@ -333,7 +334,7 @@ export default async function FunnelPage({
   const radial = layout === 'radial' ? funnelRadialModel(journeys, now) : null;
   const spaceNodes = layout === 'flow' ? funnelSpaceModel(journeys, now) : null;
   // ?lead= (attention-rail clicks) pins that lead's dossier in the canvas
-  const lead = journeys.some((j) => j.id === searchParams?.lead) ? searchParams?.lead : undefined;
+  const lead = journeys.some((j) => j.id === sp?.lead) ? sp?.lead : undefined;
   const attention = attentionQueue(journeys, now);
 
   // Segment select: the table narrows to one stage; with a bounded row set we

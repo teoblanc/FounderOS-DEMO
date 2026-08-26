@@ -9,10 +9,11 @@ import { FollowerBarChart } from '@/components/FollowerBarChart';
 
 export const dynamic = 'force-dynamic';
 
-export default function SocialPlatformPage({ params }: { params: { platform: string } }) {
+export default async function SocialPlatformPage({ params }: { params: Promise<{ platform: string }> }) {
+  const { platform } = await params;
   const db = getDb();
   syncFromZernioConfig(db);
-  const detail = platformDetail(db, params.platform as SocialPlatform);
+  const detail = platformDetail(db, platform as SocialPlatform);
   if (!detail) notFound();
 
   const { account, followers, growth, snapshots } = detail;
