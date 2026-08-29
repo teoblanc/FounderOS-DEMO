@@ -11,15 +11,14 @@
   "observability": {
     "enabled": true
   },
-  // Created by `wrangler d1 create founder-os-demo` — replace database_id
-  // with the id that command prints, then `wrangler d1 migrations apply DB`
-  // to lay down the schema in migrations/. See the "Deploying to Cloudflare
-  // Workers" section in README.md for the full walkthrough.
+  // D1 database created and migrated (migrations/0001_init.sql) directly via
+  // the Cloudflare API. See the "Deploying to Cloudflare Workers" section in
+  // README.md for the remaining deploy step.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "founder-os-demo",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+      "database_id": "7c92e361-eee1-4442-ab00-d48a6e930027"
     }
   ]
 }

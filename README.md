@@ -226,29 +226,21 @@ this path swaps it for [Cloudflare D1](https://developers.cloudflare.com/d1/)
 picks the right backend automatically depending on where it's running, so
 local dev, tests, and the Railway path above are completely unaffected.
 
-1. **Create the D1 database:**
-   ```bash
-   npx wrangler d1 create founder-os-demo
-   ```
-   Copy the `database_id` it prints into `wrangler.jsonc`'s `d1_databases[0]`
-   entry (replacing `REPLACE_WITH_YOUR_D1_DATABASE_ID`).
-2. **Apply the schema:**
-   ```bash
-   npx wrangler d1 migrations apply DB --remote
-   ```
-   (drop `--remote` to apply against the local Miniflare simulation first, for
-   the preview step below).
-3. **Preview locally** — builds the app and boots it under `workerd`
+The `founder-os-demo` D1 database is already created and migrated (its id is
+in `wrangler.jsonc`, schema applied from `migrations/0001_init.sql`), so what's
+left is local verification and the deploy itself:
+
+1. **Preview locally** — builds the app and boots it under `workerd`
    (Cloudflare's actual Workers runtime) against a local D1 simulation, so you
    can click through the whole seeded app before touching your real account:
    ```bash
    npm run preview
    ```
-4. **Deploy:**
+2. **Deploy:**
    ```bash
    npm run deploy
    ```
-5. **Secrets** — Workers don't read `.env.local`; set anything you want live
+3. **Secrets** — Workers don't read `.env.local`; set anything you want live
    with `npx wrangler secret put KEY_NAME` instead (see `.env.example` for the
    full list).
 
